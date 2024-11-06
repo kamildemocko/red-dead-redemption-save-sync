@@ -24,6 +24,8 @@ WIN_SAVE_FOLDER = Path(
 
 
 def copy_from_windows() -> None:
+    print("copying file from Windows")
+
     # check if dir exists in win
     if not WIN_SAVE_FOLDER.exists():
         raise FileNotFoundError(f"windows save folder not found at {WIN_SAVE_FOLDER}")
@@ -36,8 +38,12 @@ def copy_from_windows() -> None:
     # copy and overwrite
     copytree(WIN_SAVE_FOLDER, LINUX_STEAM_SAVE_FOLDER, dirs_exist_ok=True)
 
+    print("> done")
+
 
 def copy_from_linux() -> None:
+    print("copying file from linux")
+
     # check if dir exists in win
     if not LINUX_STEAM_SAVE_FOLDER.exists():
         raise FileNotFoundError(f"linux steam save folder not found at {LINUX_STEAM_SAVE_FOLDER}")
@@ -49,6 +55,8 @@ def copy_from_linux() -> None:
 
     # copy and overwrite
     copytree(LINUX_STEAM_SAVE_FOLDER, WIN_SAVE_FOLDER, dirs_exist_ok=True)
+
+    print("> done")
 
 
 def get_args() -> argparse.Namespace | None:
