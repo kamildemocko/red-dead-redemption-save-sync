@@ -23,7 +23,16 @@ uv sync
 ## Usage
 
 1. Clone the repository or download the script.  
-2. Run the script with the desired option:  
+2. Edit settings.ini and set correct values, you can use $login instead of your unix username
+
+```
+[DEFAULT]
+WIN_LOGIN_NAME=YOUR_WINDOWS_USERNAME
+DRIVES_MOUNT_POINT=/run/media/$login
+```
+- some systems use `/mnt` or `/mount/USERNAME`
+
+3. Run the script with the desired option:  
 
 From Windows to Linux:
 ```
