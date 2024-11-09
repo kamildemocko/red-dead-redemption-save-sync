@@ -1,10 +1,14 @@
 import argparse
 from pathlib import Path
+from configparser import ConfigParser
 
 from copier import Copier
 
 
 def get_args() -> argparse.Namespace | None:
+    """
+    Sets and gets arguments
+    """
     parser = argparse.ArgumentParser(
         "Copies saves for Red Dead Redemption game from and to Linux/Windows\n"
         f"{Path(__file__).name}"
@@ -15,17 +19,25 @@ def get_args() -> argparse.Namespace | None:
     parser.add_argument(
         "-l", "--linux", action="store_true", help="Copy from Linux to Windows"
     )
-    args = parser.parse_args()
+    parsed_args = parser.parse_args()
 
-    if not args.windows and not args.linux:
+    if not parsed_args.windows and not parsed_args.linux:
         parser.print_help()
         return None
 
-    return args
+    return parsed_args
 
 
-def start(from_win: bool, from_lnx: bool) -> None:
-    copier = Copier()
+def start(
+    windows_user: str, drives_mount_point: str, from_win: bool, from_lnx: bool
+) -> None:
+    """
+    runs program
+    :param windows_user: (str)
+    :param from_win: (bool)
+    :param from_lnx: (bool)
+    """
+    copier = Copier("sda2", windows_user=windows_user, mount_point=drives_mount_point)
 
     if from_lnx:
         copier.copy_from_linux()
@@ -37,5 +49,10 @@ def start(from_win: bool, from_lnx: bool) -> None:
 if __name__ == "__main__":
     args = get_args()
 
+    config = ConfigParser()
+    config.read("settings.ini")
+    win_login_name = config.get("DEFAULT", "WIN_LOGIN_NAME")
+    drives_mnt_point = config.get("DEFAULT", "DRIVES_MOUNT_POINT")
+
     if args is not None:
-        start(args.windows, args.linux)
+        start(win_login_name, drives_mnt_point, args.windows, args.linux)

@@ -1,31 +1,45 @@
 import os
+import subprocess
 from pathlib import Path
 import tarfile
 from shutil import copytree
 
 import arrow
 
-# constants
 STEAM_ROOT = Path("~/.steam/steam/steamapps/compatdata").expanduser()
-WIN_LOGIN_NAME = "kamil"
-LINUX_DISK_C_DRIVE_ID = "01DAC57B4841EBE0"
 
 
 class Copier:
-    def __init__(self) -> None:
+    """
+    The class that copies files along with few utils
+    """
+
+    def __init__(
+        self, device: str, windows_user: str, mount_point: str = "/run/media/$login"
+    ) -> None:
+        """
+        :param device: (str) device to look for, example: sda2
+        :param mount_point: (str) path where disks are mounted,
+            default is /run/media/username (arch)
+            other systems might put it under /media/username or /mnt
+            pass $login to get current user login (os.getlogin)
+        """
         self.linux_steam_save_folder = STEAM_ROOT.joinpath(
             f"{self._lookup_steam_folder_id()}/pfx/drive_c/users/steamuser/AppData/"
             "Roaming/.1911/Red Dead Redemption"
         )
 
+        mount_point_path = Path(mount_point.replace("$login", os.getlogin()))
         self.win_save_folder = Path(
-            f"/run/media/{os.getlogin()}"
-            f"/{LINUX_DISK_C_DRIVE_ID}/Users/{WIN_LOGIN_NAME}"
+            f"{mount_point_path}/{self._get_drive_id(device)}/Users/{windows_user}"
             "/AppData/Roaming/.1911/Red Dead Redemption"
         )
 
     @staticmethod
     def _lookup_steam_folder_id():
+        """
+        looks up folder Red Dead Redemption in steam root folder
+        """
         profile = list(STEAM_ROOT.rglob("Red Dead Redemption/profile"))
         if len(profile) != 1:
             raise ValueError("cannot find steam profile folder")
@@ -34,7 +48,26 @@ class Copier:
 
         return folder_id
 
+    @staticmethod
+    def _get_drive_id(device: str) -> str:
+        """
+        Get drive ID, under which it is mounted
+        :param device: (str) device to look for, example: sda2
+        """
+        sp = subprocess.run(
+            [f"lsblk -o NAME,UUID | grep {device}"],
+            check=True,
+            text=True,
+            capture_output=True,
+            shell=True,
+        )
+
+        return sp.stdout.strip().split()[-1]
+
     def copy_from_windows(self) -> None:
+        """
+        Windows -> Linux
+        """
         print("copying file from Windows")
 
         # check if dir exists in win
@@ -54,6 +87,9 @@ class Copier:
         print("> done")
 
     def copy_from_linux(self) -> None:
+        """
+        Linux -> Windows
+        """
         print("copying file from linux")
 
         # check if dir exists in win
