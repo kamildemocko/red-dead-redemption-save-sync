@@ -105,7 +105,11 @@ class Copier:
         """
         print("copying file from Windows")
 
-        # check if dir exists in win
+        # check if dirs exists
+        if not self.linux_steam_save_folder.exists():
+            print(f"linux save folder not found at {self.linux_steam_save_folder}")
+            sys.exit()
+
         if not self.win_save_folder.exists():
             mounted = self._try_mount_win_device(self.device)
             if not mounted:
@@ -130,9 +134,14 @@ class Copier:
 
         # check if dir exists in win
         if not self.linux_steam_save_folder.exists():
-            raise FileNotFoundError(
-                f"linux steam save folder not found at {self.linux_steam_save_folder}"
-            )
+            print(f"linux save folder not found at {self.linux_steam_save_folder}")
+            sys.exit()
+
+        if not self.win_save_folder.exists():
+            mounted = self._try_mount_win_device(self.device)
+            if not mounted:
+                print(f"windows save folder not found at {self.win_save_folder}")
+                sys.exit()
 
         # create backup
         timestamp = arrow.now().format("YYYY-MM-DDTHH-mm-ss")
