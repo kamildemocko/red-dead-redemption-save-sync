@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 from pathlib import Path
 import tarfile
@@ -24,14 +25,16 @@ class Copier:
             other systems might put it under /media/username or /mnt
             pass $login to get current user login (os.getlogin)
         """
+        self.device = device
+        self.mount_point_path = Path(mount_point.replace("$login", os.getlogin()))
+
         self.linux_steam_save_folder = STEAM_ROOT.joinpath(
             f"{self._lookup_steam_folder_id()}/pfx/drive_c/users/steamuser/AppData/"
             "Roaming/.1911/Red Dead Redemption"
         )
 
-        mount_point_path = Path(mount_point.replace("$login", os.getlogin()))
         self.win_save_folder = Path(
-            f"{mount_point_path}/{self._get_drive_id(device)}/Users/{windows_user}"
+            f"{self.mount_point_path}/{self._get_drive_id(device)}/Users/{windows_user}"
             "/AppData/Roaming/.1911/Red Dead Redemption"
         )
 
@@ -47,6 +50,38 @@ class Copier:
         folder_id = profile[0].parents[8].name
 
         return folder_id
+
+    def _try_mount_win_device(self, device: str) -> bool:
+        """
+        try mount drive if not found
+        this might ask for root password
+        :param device: (str) device name
+        :returns: (bool) successful or not
+        """
+        print(f"Trying to mount device {device}, you might be prompted for password")
+
+        dev_id = self._get_drive_id(device)
+
+        try:
+            subprocess.run(
+                ["sudo", "mkdir", "-p", self.mount_point_path.joinpath(dev_id)],
+                check=True,
+            )
+
+            subprocess.run(
+                [
+                    "sudo",
+                    "mount",
+                    f"/dev/{device}",
+                    f"{self.mount_point_path}/{dev_id}",
+                ],
+                check=True,
+            )
+
+            return True
+
+        except subprocess.CalledProcessError:
+            return False
 
     @staticmethod
     def _get_drive_id(device: str) -> str:
@@ -72,9 +107,10 @@ class Copier:
 
         # check if dir exists in win
         if not self.win_save_folder.exists():
-            raise FileNotFoundError(
-                f"windows save folder not found at {self.win_save_folder}"
-            )
+            mounted = self._try_mount_win_device(self.device)
+            if not mounted:
+                print(f"windows save folder not found at {self.win_save_folder}")
+                sys.exit()
 
         # create backup
         timestamp = arrow.now().format("YYYY-MM-DDTHH-mm-ss")
